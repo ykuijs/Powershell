@@ -1,4 +1,30 @@
-﻿Add-PSSnapin Microsoft.SharePoint.Powershell
+﻿<#  
+.SYNOPSIS  
+    Determine what are the highest and lowest build numbers installed on the current SharePoint server
+.DESCRIPTION  
+    This script determines what are highest and lowest build numbers installed on the current SharePoint
+    server. It is based on the "Product and patch installation status" page in Central Administration,
+    which is THE source to check the current patch level.
+.PARAMETER
+    The script does not have any input parameters.
+.EXAMPLE
+    .\SP_VerionCheck.ps1
+    Run the script
+.NOTES  
+    File Name     : SP_VerionCheck.ps1
+    Author        : Yorick Kuijs
+    Version       : 1.0.0
+	Last Modified : 01-06-2017
+.CHANGES
+    v1.0.0 - Initial release
+.LINK
+	https://github.com/ykuijs/Powershell/tree/dev/SharePoint
+#>
+
+if ($null -eq (Get-PSSnapin -Name Microsoft.SharePoint.PowerShell -ErrorAction SilentlyContinue))
+{
+    Add-PSSnapin Microsoft.SharePoint.PowerShell -EA SilentlyContinue
+}
 
 $farm = Get-SPFarm
 $productVersions = [Microsoft.SharePoint.Administration.SPProductVersions]::GetProductVersions($farm)

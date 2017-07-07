@@ -1,4 +1,28 @@
-﻿# https://support.microsoft.com/en-us/help/952167
+﻿<#  
+.SYNOPSIS
+    Generating an overview of required file system antivirus exclusions
+.DESCRIPTION
+    The SharePoint Product Group has published all required file system antivirus exclusions for SharePoint.
+    This list can be found at: https://support.microsoft.com/en-us/help/952167
+
+    This script generates an overview of all file locations which need to be excluded, based on the previous
+    KB article.
+.PARAMETER
+    The script does not have any input parameters.
+.EXAMPLE
+    .\SP_AV_Exclusions.ps1
+    Run the script
+.NOTES  
+    File Name     : SP_AV_Exclusions.ps1
+    Author        : Yorick Kuijs
+    Version       : 1.0.1
+	Last Modified : 16-06-2017
+.CHANGES
+    v1.0.0 - Initial release (01-06-2017)
+    v1.0.1 - Included feedback comments (16-06-2017)
+.LINK
+	https://github.com/ykuijs/Powershell/tree/dev/SharePoint
+#>
 
 function Write-Log()
 {
@@ -205,7 +229,7 @@ function CheckSearchAccount()
     {
         $tempaccount = $searchaccount -split "\\"
         $account = $tempaccount[1]
-        Write-Log "$($env:SystemDrive) \Users\$account\AppData\Local\Temp\WebTempDir"
+        Write-Log "$($env:SystemDrive)\Users\$account\AppData\Local\Temp\WebTempDir"
         Write-Log "$($env:SystemDrive)\Users\$account\AppData\Local\Temp"
     }
 }
@@ -237,11 +261,12 @@ function WebApplicationIIS()
        
     foreach($webApplication in $webApplications)
     {
-        #Get the IIS Settings as defined in SharePoint, since this is a keyvaluepair object, we need to get the keys first
+        # Get the IIS Settings as defined in SharePoint, since this is a keyvaluepair object,
+        # we need to get the keys first
         $settings = $webApplication.IISSettings
         $keys = $settings.Keys
        
-        #The keys correspond to the zones defined in SP
+        # The keys correspond to the zones defined in SP
         foreach($key in $keys)
         {            
             $setting = $settings[$key]
@@ -263,6 +288,24 @@ function WebApplicationIIS()
 
     Write-Host "Blobcache locations" -ForegroundColor Green
     $blobcache | Sort-Object | Get-Unique | ForEach-Object -Process { Write-Log $_ }
+}
+
+# ======================================================================================
+# Checking all running SharePoint processes
+# ======================================================================================
+function CheckRunningProcesses()
+{
+    $processes = ("w3wp", "owstimer", "wssadmin", "wsstracing", "mssearch", "noderunner", "ParserServer", "hostcontrollerservice", "mssdmn")
+
+    Write-Host "Running SharePoint processes:" -ForegroundColor Green
+    foreach ($process in $processes)
+    {
+        $proc = Get-Process $process -EA 0
+        if ($null -ne $proc)
+        {
+            Write-Log "$process"
+        }
+    }
 }
 
 
@@ -293,3 +336,6 @@ CheckAllOtherAccounts
 
 # Check the folders used by the SharePoint WebApplications
 WebApplicationIIS
+
+# Check known SharePoint processes
+CheckRunningProcesses
