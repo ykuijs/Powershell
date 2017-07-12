@@ -184,6 +184,17 @@ function SharePointFolders([int]$version)
         Write-Log "$($env:SystemDrive)\Program Files\Common Files\Microsoft Shared\Web Server Extensions\$version\Data\Applications"
     }
 
+    $loglocation = (Get-SPDiagnosticConfig).LogLocation.TrimEnd("\")
+    if ($loglocation -match "(%\w*%)\w*")
+    {
+        $replace = [System.Environment]::ExpandEnvironmentVariables($matches[1])
+        $loglocation = $loglocation -replace $matches[1], $replace
+    }
+    if ($loglocation -ne "$($env:SystemDrive)\Program Files\Common Files\Microsoft Shared\Web Server Extensions\$version\Logs")
+    {
+        Write-Log "$loglocation"
+    }
+
     $regKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"
     $installedItems = Get-ItemProperty -Path $regKey | Where-Object -FilterScript { $_.DisplayName -match "^Microsoft SharePoint Server (2010|2013|2016)" }
     if ($null -eq $installedItems)
