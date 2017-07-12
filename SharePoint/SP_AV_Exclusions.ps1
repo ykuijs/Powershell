@@ -15,11 +15,12 @@
 .NOTES  
     File Name     : SP_AV_Exclusions.ps1
     Author        : Yorick Kuijs
-    Version       : 1.0.1
-	Last Modified : 16-06-2017
+    Version       : 1.0.2
+	Last Modified : 12-07-2017
 .CHANGES
     v1.0.0 - Initial release (01-06-2017)
     v1.0.1 - Included feedback comments (16-06-2017)
+    v1.0.2 - Included dynamic logging and search folders (12-7-2017)
 .LINK
 	https://github.com/ykuijs/Powershell/tree/dev/SharePoint
 #>
@@ -213,6 +214,23 @@ function SharePointFolders([int]$version)
     Write-Log "$spServerInstallLocation\$version.0\Bin"
     Write-Log "$spServerInstallLocation\$version.0\Data"
     Write-Log "$spServerInstallLocation\$version.0\Logs"
+
+    $ssi = Get-SPEnterpriseSearchServiceInstance
+    Write-Log "$($ssi.Components[0].IndexLocation)"
+
+    $ssas = Get-SPEnterpriseSearchServiceApplication
+    foreach ($ssa in $ssas)
+    {
+        $topo = Get-SPEnterpriseSearchTopology -SearchApplication $ssa -Active
+        $components = Get-SPEnterpriseSearchComponent -SearchTopology $topo
+        foreach ($component in $components)
+        {
+            if ($null -ne $component.RootDirectory -and $component.RootDirectory -ne "")
+            {
+                Write-Log "$($component.RootDirectory)"
+            }
+        }
+    }
 
     if ($version -lt 16)
     {
