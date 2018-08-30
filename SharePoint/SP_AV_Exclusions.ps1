@@ -15,12 +15,13 @@
 .NOTES  
     File Name     : SP_AV_Exclusions.ps1
     Author        : Yorick Kuijs
-    Version       : 1.0.2
-	Last Modified : 12-07-2017
+    Version       : 1.0.3
+	Last Modified : 30-08-2018
 .CHANGES
     v1.0.0 - Initial release (01-06-2017)
     v1.0.1 - Included feedback comments (16-06-2017)
     v1.0.2 - Included dynamic logging and search folders (12-7-2017)
+    v1.0.3 - Updated the SP2010 version check and SP2010 search folder generation (30-8-2018)
 .LINK
 	https://github.com/ykuijs/Powershell/tree/dev/SharePoint
 #>
@@ -103,13 +104,14 @@ function DetermineSharePointVersion()
     $x64Path = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"
     $installedItemsX64 = Get-ItemProperty -Path $x64Path | Select-Object -Property DisplayName
 
-    $installedItems = $installedItemsX86 + $installedItemsX64 
-    $installedItems = $installedItems.DisplayName | Foreach-Object {
+    $installedItems = $installedItemsX86 + $installedItemsX64
+    $installedItems = $installedItems | Sort-Object -Property DisplayName -Unique | Where-Object { $null -ne $_.DisplayName } | ForEach-Object {$_.DisplayName.Trim() }
+<#    $installedItems = $installedItems | Select-Object -Property DisplayName | Foreach-Object {
         if ($null -ne $_)
         {
             $_.Trim()
         }
-    } | Sort-Object | Get-Unique
+    } | Sort-Object | Get-Unique#>
     
     [int]$installedVersion = 0
     switch ($installedItems)
@@ -216,21 +218,28 @@ function SharePointFolders([int]$version)
     Write-Log "$spServerInstallLocation\$version.0\Logs"
 
     $ssi = Get-SPEnterpriseSearchServiceInstance
-    Write-Log "$($ssi.Components[0].IndexLocation)"
-
-    $ssas = Get-SPEnterpriseSearchServiceApplication
-    foreach ($ssa in $ssas)
+    if ($null -ne $ssi -and $ssi.Components.Count -ge 1)
     {
-        $topo = Get-SPEnterpriseSearchTopology -SearchApplication $ssa -Active
-        $components = Get-SPEnterpriseSearchComponent -SearchTopology $topo
-        foreach ($component in $components)
+        Write-Log "$($ssi.Components[0].IndexLocation)"
+    }
+
+    if ($version -gt 14)
+    {
+        $ssas = Get-SPEnterpriseSearchServiceApplication
+        foreach ($ssa in $ssas)
         {
-            if ($null -ne $component.RootDirectory -and $component.RootDirectory -ne "")
+            $topo = Get-SPEnterpriseSearchTopology -SearchApplication $ssa -Active
+            $components = Get-SPEnterpriseSearchComponent -SearchTopology $topo
+            foreach ($component in $components)
             {
-                Write-Log "$($component.RootDirectory)"
+                if ($null -ne $component.RootDirectory -and $component.RootDirectory -ne "")
+                {
+                    Write-Log "$($component.RootDirectory)"
+                }
             }
         }
     }
+
 
     if ($version -lt 16)
     {
