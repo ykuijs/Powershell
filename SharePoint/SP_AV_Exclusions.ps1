@@ -3,7 +3,8 @@
     Generating an overview of required file system antivirus exclusions
 .DESCRIPTION
     The SharePoint Product Group has published all required file system antivirus exclusions for SharePoint.
-    This list can be found at: https://support.microsoft.com/en-us/help/952167
+    This list can be found at:
+    https://support.office.com/en-us/article/certain-folders-may-have-to-be-excluded-from-antivirus-scanning-when-you-use-file-level-antivirus-software-in-sharepoint-01cbc532-a24e-4bba-8d67-0b1ed733a3d9
 
     This script generates an overview of all file locations which need to be excluded, based on the previous
     KB article.
@@ -15,13 +16,14 @@
 .NOTES  
     File Name     : SP_AV_Exclusions.ps1
     Author        : Yorick Kuijs
-    Version       : 1.0.3
-	Last Modified : 30-08-2018
+    Version       : 1.0.4
+	Last Modified : 21-03-2019
 .CHANGES
     v1.0.0 - Initial release (01-06-2017)
     v1.0.1 - Included feedback comments (16-06-2017)
-    v1.0.2 - Included dynamic logging and search folders (12-7-2017)
-    v1.0.3 - Updated the SP2010 version check and SP2010 search folder generation (30-8-2018)
+    v1.0.2 - Included dynamic logging and search folders (12-07-2017)
+    v1.0.3 - Updated the SP2010 version check and SP2010 search folder generation (30-08-2018)
+    v1.0.4 - Added SharePoint 2019 support (21-03-2019)
 .LINK
 	https://github.com/ykuijs/Powershell/tree/dev/SharePoint
 #>
@@ -116,6 +118,12 @@ function DetermineSharePointVersion()
     [int]$installedVersion = 0
     switch ($installedItems)
     {
+        "Microsoft SharePoint Server 2019"
+        {
+            Write-Host "Using SharePoint Server 2019" -ForegroundColor Yellow
+            $installedVersion = 16;
+            break
+        }
         "Microsoft SharePoint Server 2016" 
         {
             Write-Host "Using SharePoint Server 2016" -ForegroundColor Yellow  
@@ -199,7 +207,7 @@ function SharePointFolders([int]$version)
     }
 
     $regKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"
-    $installedItems = Get-ItemProperty -Path $regKey | Where-Object -FilterScript { $_.DisplayName -match "^Microsoft SharePoint Server (2010|2013|2016)" }
+    $installedItems = Get-ItemProperty -Path $regKey | Where-Object -FilterScript { $_.DisplayName -match "^Microsoft SharePoint Server (2010|2013|2016|2019)" }
     if ($null -eq $installedItems)
     {
         Write-Error "Cannot find any installed SharePoint products"
@@ -246,7 +254,7 @@ function SharePointFolders([int]$version)
         Write-Log "$spServerInstallLocation\$version.0\Synchronization Service"
     }
 
-    if ($version -eq 16)
+    if ($version -ge 16)
     {
         Write-Host "SharePoint Server folder" -ForegroundColor Green
         Write-Log "$spServerInstallLocation\$version.0\Data\Office Server\Applications"
